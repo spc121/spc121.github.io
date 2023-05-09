@@ -6,11 +6,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>  训练自己的Alpaca |    Yiyang Ai Lab.</title>
+  <title>  训练自己的Alpaca |   Pengcheng Shi.</title>
   <meta name="description" content="Personal website. Recording some creative things">
   <!-- 标签页图标 -->
   
-  <link rel="shortcut icon" href="https://github.com/YiyangZhou/imageBeds/blob/main/imgs/collage-line.png" type="image/x-icon">
+  <link rel="shortcut icon" href="https://github.com/spc121/imageBeds/blob/main/imgs/collage-line.png" type="image/x-icon">
   
 
   <!-- 图标库 -->
@@ -34,7 +34,7 @@
     <div class="menu-inner">
       <div class="menu-site-name  animate__animated  animate__fadeInUp">
         <a href="/">
-          Yiyang Ai Lab.
+          Pengcheng Shi.
         </a>
         
       </div>
@@ -69,7 +69,7 @@
   <div class="mobile-menu-inner">
     <div class="mobile-menu-site-name animate__animated  animate__fadeInUp">
       <a href="/">
-        Yiyang Ai Lab.
+        Pengcheng Shi.
       </a>
     </div>
     <div class="mobile-menu-group" id="mobile-close">
@@ -130,7 +130,7 @@
 <p>这是个alpaca json data的gpt翻译版</p>
 <p>来源于<a target="_blank" rel="noopener" href="https://github.com/LC1332/Chinese-alpaca-lora">https://github.com/LC1332/Chinese-alpaca-lora</a></p>
 <p>训练：8张v100</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /nas-alinlp/yiyang.zyy/alpaca-lora</span><br><span class="line"><span class="built_in">source</span> activate /nas-alinlp/yiyang.zyy/conda_envs/envs/alpaca</span><br><span class="line">WORLD_SIZE=8 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun --nproc_per_node=8 \</span><br><span class="line">--master_port=1234 finetune.py \</span><br><span class="line">--base_model <span class="string">&#x27;decapoda-research/llama-7b-hf&#x27;</span> \</span><br><span class="line">--data_path <span class="string">&#x27;/nas-alinlp/yiyang.zyy/alpaca-lora/trans_chinese_alpaca_data.json&#x27;</span> \</span><br><span class="line">--output_dir <span class="string">&#x27;./lora-alpaca-zh&#x27;</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /nas-alinlp/pengcheng.spc/alpaca-lora</span><br><span class="line"><span class="built_in">source</span> activate /nas-alinlp/pengcheng.spc/conda_envs/envs/alpaca</span><br><span class="line">WORLD_SIZE=8 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun --nproc_per_node=8 \</span><br><span class="line">--master_port=1234 finetune.py \</span><br><span class="line">--base_model <span class="string">&#x27;decapoda-research/llama-7b-hf&#x27;</span> \</span><br><span class="line">--data_path <span class="string">&#x27;/nas-alinlp/pengcheng.spc/alpaca-lora/trans_chinese_alpaca_data.json&#x27;</span> \</span><br><span class="line">--output_dir <span class="string">&#x27;./lora-alpaca-zh&#x27;</span></span><br></pre></td></tr></table></figure>
 
 <blockquote>
 <p>遇到一个坑：原始代码finetune使用int8量化会导致loss起飞，必须改掉</p>
@@ -138,7 +138,7 @@
 <p>
         <span class="lazyload-img-span">
         <img   
-           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230413110118797.png" >
+           data-src="https://raw.githubusercontent.com/spc121/imageBeds/main/imgs/image-20230413110118797.png" >
         </sapn>
       </p>
 </blockquote>
@@ -176,13 +176,13 @@
     <ul class="footer-ul">
         
         <li class="footer-li">
-            <a href="https://github.com/YiyangZhou" target="_blank">
+            <a href="https://github.com/spc121" target="_blank">
                 <i class="ri-github-line"></i>
             </a>
         </li>
         
         <li class="footer-li">
-            <a href="mailto:zhouyiyangailab@gmail.com" target="_blank">
+            <a href="mailto:st651651@gmail.com" target="_blank">
                 <i class="ri-mail-line"></i>
             </a>
         </li>

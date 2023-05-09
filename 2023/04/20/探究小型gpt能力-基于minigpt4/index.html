@@ -6,11 +6,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>  探究小型Gpt能力-基于Minigpt4 |    Yiyang Ai Lab.</title>
+  <title>  探究小型Gpt能力-基于Minigpt4 |    Pengcheng Shi.</title>
   <meta name="description" content="Personal website. Recording some creative things">
   <!-- 标签页图标 -->
   
-  <link rel="shortcut icon" href="https://github.com/YiyangZhou/imageBeds/blob/main/imgs/collage-line.png" type="image/x-icon">
+  <link rel="shortcut icon" href="https://github.com/spc121/imageBeds/blob/main/imgs/collage-line.png" type="image/x-icon">
   
 
   <!-- 图标库 -->
@@ -34,7 +34,7 @@
     <div class="menu-inner">
       <div class="menu-site-name  animate__animated  animate__fadeInUp">
         <a href="/">
-          Yiyang Ai Lab.
+          Pengcheng Shi.
         </a>
         
       </div>
@@ -69,7 +69,7 @@
   <div class="mobile-menu-inner">
     <div class="mobile-menu-site-name animate__animated  animate__fadeInUp">
       <a href="/">
-        Yiyang Ai Lab.
+        Pengcheng Shi.
       </a>
     </div>
     <div class="mobile-menu-group" id="mobile-close">
@@ -124,7 +124,7 @@
 <p>
         <span class="lazyload-img-span">
         <img   
-           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428145730956.png" >
+           data-src="https://raw.githubusercontent.com/spc121/imageBeds/main/imgs/image-20230428145730956.png" >
         </sapn>
       </p>
 <p>简单来说，adapter就是固定原有的参数，并添加一些额外参数用于微调。上图中会在原始的transformer block中添加2个adapter，一个在多头注意力后面，另一个这是FFN后面。</p>
@@ -133,7 +133,7 @@
 <p>
         <span class="lazyload-img-span">
         <img   
-           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428150834618.png" >
+           data-src="https://raw.githubusercontent.com/spc121/imageBeds/main/imgs/image-20230428150834618.png" >
         </sapn>
       </p>
 <p>prefix-tuning方法是受语言模型in-context learning能力的启发，只要有合适的上下文则语言模型可以很好的解决自然语言任务。但是，针对特定的任务找到离散token的前缀需要花费很长时间，prefix-tuning提出使用连续的virtual token embedding来替换离散token。</p>
@@ -143,41 +143,41 @@
 <p>
         <span class="lazyload-img-span">
         <img   
-           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428151054073.png" >
+           data-src="https://raw.githubusercontent.com/spc121/imageBeds/main/imgs/image-20230428151054073.png" >
         </sapn>
       </p>
 <p>，使用 W<sub>q</sub>、W<sub>k</sub>、W<sub>v</sub>和W<sub>o</sub>表示自注意力模块中的query/key/value/output投影矩阵。 W或W<sub>0</sub> 表示预训练模型的权重矩阵， ΔW 表示模型在适配过程中的梯度更新。r来表示LoRA模块的秩。使用Adam作为模型优化器，Transformer MLP前馈层的维度为 :</p>
 <p>
         <span class="lazyload-img-span">
         <img   
-           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428151432190.png" >
+           data-src="https://raw.githubusercontent.com/spc121/imageBeds/main/imgs/image-20230428151432190.png" >
         </sapn>
       。</p>
 <p><strong>问题表述</strong>。LoRA虽然与训练目标无关，这里还是以语言建模为例。假设给定一个预训练的自回归语言模型 P<sub>Φ</sub>sub&gt;(y|x) , Φ 是模型参数。目标是使该语言模型适应下游的摘要、机器阅读理解等任务。每个下游任务都有context-target样本对组成的训练集： z={(x<sub>i</sub>,y<sub>i</sub>)}<sub>i=1,…,N</sub>，其中 x<sub>i</sub> 和 y<sub>i</sub> 都是token序列。例如，对于摘要任务， x<sub>i</sub>  是文章内容，y<sub>i</sub>是摘要。</p>
 <p>在完整微调的过程中，模型使用预训练好的权重 Φ<sub>0</sub> 来初始化模型，然后通过最大化条件语言模型来更新参数 Φ<sub>0</sub>+ΔΦ ：<br>
         <span class="lazyload-img-span">
         <img   
-           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428151954481.png" >
+           data-src="https://raw.githubusercontent.com/spc121/imageBeds/main/imgs/image-20230428151954481.png" >
         </sapn>
       </p>
 <p>完整微调的主要缺点：对于每个下游任务，都需要学习不同的参数更新 ΔΦ ，其中维度 |ΔΦ|=| Φ<sub>0</sub> | 。因此，如果预训练模型很大，存储和部署许多独立的微调模型实例非常有挑战。</p>
 <p>LoRA为了更加的参数高效，使用相对非常小的参数 Θ 来表示任务相关的参数增量 ΔΦ=ΔΦ(Θ) ，其中 |Θ|≪| Φ<sub>0</sub> | 。寻找 ΔΦ 的任务就变成对 Θ 的优化:<br>
         <span class="lazyload-img-span">
         <img   
-           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428152049131.png" >
+           data-src="https://raw.githubusercontent.com/spc121/imageBeds/main/imgs/image-20230428152049131.png" >
         </sapn>
       </p>
 <p>LoRA将会使用低秩表示来编码 ΔΦ ，同时实现计算高效和存储高效。当预训练模型是175B GPT-3，可训练参数 |Θ| 可以小至 |Φ<sub>0</sub> | 的 0.01% 。</p>
 <h2 id="1-4LoRA"><a href="#1-4LoRA" class="headerlink" title="1.4LoRA"></a>1.4LoRA</h2><p>
         <span class="lazyload-img-span">
         <img   
-           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428153415914.png" >
+           data-src="https://raw.githubusercontent.com/spc121/imageBeds/main/imgs/image-20230428153415914.png" >
         </sapn>
       </p>
 <p>通常，神经网络中会包含许多进行矩阵乘法的稠密层，这些层通常是满秩的。在模型适配下游任务的过程中，权重更新也应该具有低的“内在秩”。对于预训练权重矩阵 W<sub>0</sub>∈R<sup>d×k</sup> ，可以通过低秩分解来表示其更新 ，W<sub>0</sub>+ΔW=W<sub>0</sub>+BA，B∈R<sup>d×r</sup>, A∈R<sup>r×k</sup> 且秩 r≪min(d,k) 。在训练过程中， W<sub>0</sub>被冻结且不接受梯度更新，A和B则是可训练参数。注意， W<sub>0</sub>和 ΔW=BA 都会乘以相同的输入。对于h=W<sub>0</sub>x ，前向传播变为：<br>
         <span class="lazyload-img-span">
         <img   
-           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428161958237.png" >
+           data-src="https://raw.githubusercontent.com/spc121/imageBeds/main/imgs/image-20230428161958237.png" >
         </sapn>
       </p>
 <p>对矩阵 A 使用随机高斯初始化，对矩阵 B 使用0进行初始化，因此 ΔW=BA 在训练的开始为0。使用 a/r 来缩放 ΔWx 。当使用Adam优化时，经过适当的缩放初始化，调优a与调优学习率大致相同。</p>
@@ -186,14 +186,14 @@
 <h2 id="2-1训练数据"><a href="#2-1训练数据" class="headerlink" title="2.1训练数据"></a>2.1训练数据</h2><p>
         <span class="lazyload-img-span">
         <img   
-           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230429143332545.png" >
+           data-src="https://raw.githubusercontent.com/spc121/imageBeds/main/imgs/image-20230429143332545.png" >
         </sapn>
       </p>
 <p>多任务提示微调(也称为instruction tuning)涉及到对预训练语言模型的微调，微调的数据集由通过自然语言提示构成的大量不同任务组成。T0证明了在多任务混合的prompted数据集上微调的模型具有强大的zero-shot泛化能力。此外，T0优于那些数量级大但是没有经过这种微调的语言模型。受这些结果启发，我们探索了使用现有自然语言数据集来进行多任务prompted微调。</p>
 <p>
         <span class="lazyload-img-span">
         <img   
-           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230429144115726.png" >
+           data-src="https://raw.githubusercontent.com/spc121/imageBeds/main/imgs/image-20230429144115726.png" >
         </sapn>
       </p>
 <p>T0是在Public Pool of Prompt(P3)子集上进行训练的，其是一个各种现有的、开源的应用自然语言数据集的prompt集合。该prompt集合是通过BigScience合作者参与的一系列黑客马拉松创建的，其中黑客马拉松参与者为170+数据集编写了2000+的prompt。P3中的数据集覆盖了各种自然语言任务，包括情感分析、问答、自然语言推理，并且排除了有害的内容或者非自然语言。PromptSource，一个开源工具包促进了自然语言prompt的创建、共享和使用。</p>
@@ -301,13 +301,13 @@
     <ul class="footer-ul">
         
         <li class="footer-li">
-            <a href="https://github.com/YiyangZhou" target="_blank">
+            <a href="https://github.com/spc121" target="_blank">
                 <i class="ri-github-line"></i>
             </a>
         </li>
         
         <li class="footer-li">
-            <a href="mailto:zhouyiyangailab@gmail.com" target="_blank">
+            <a href="mailto:st651651@gmail.com" target="_blank">
                 <i class="ri-mail-line"></i>
             </a>
         </li>
