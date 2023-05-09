@@ -1,0 +1,336 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>  探究小型Gpt能力-基于Minigpt4 |    Yiyang Ai Lab.</title>
+  <meta name="description" content="Personal website. Recording some creative things">
+  <!-- 标签页图标 -->
+  
+  <link rel="shortcut icon" href="https://github.com/YiyangZhou/imageBeds/blob/main/imgs/collage-line.png" type="image/x-icon">
+  
+
+  <!-- 图标库 -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@2.2.0/fonts/remixicon.css" rel="stylesheet">
+  <!-- 动画库 -->
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fushaolei/cdn-white@1.0/css/animate.css"/>
+  
+  <!-- css文件 -->
+  
+<link rel="stylesheet" href="/css/white.css">
+
+  <!-- 代码高亮 -->
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body>
+
+<div class="menu-outer">
+    <div class="menu-inner">
+      <div class="menu-site-name  animate__animated  animate__fadeInUp">
+        <a href="/">
+          Yiyang Ai Lab.
+        </a>
+        
+      </div>
+      <div class="menu-group">
+        <ul class="menu-ul">
+        
+          <a href="/" class="nav-link">
+            <li class="menu-li  animate__animated  animate__fadeInUp">
+              HOME
+            </li>
+          </a>
+        
+          <a href="/archives" class="nav-link">
+            <li class="menu-li  animate__animated  animate__fadeInUp">
+              BLOG
+            </li>
+          </a>
+        
+        
+        
+          <li class="menu-li animate__animated  animate__fadeInUp" id="mobile-menu">
+            <i class="ri-menu-line"></i>
+          </li>
+        
+        </ul>
+
+      </div>
+
+    </div>
+</div>
+<div id="mobile-main" class="animate__animated  animate__fadeIn">
+  <div class="mobile-menu-inner">
+    <div class="mobile-menu-site-name animate__animated  animate__fadeInUp">
+      <a href="/">
+        Yiyang Ai Lab.
+      </a>
+    </div>
+    <div class="mobile-menu-group" id="mobile-close">
+      <i class="ri-close-line"></i>
+    </div>
+
+  </div>
+
+  <div class="mobile-menu-div">
+  
+    <a href="/" class="mobile-nav-link">
+      <div class="mobile-menu-child animate__animated  animate__fadeInUp">
+        <span>HOME</span>
+      </div>
+    </a>
+  
+    <a href="/archives" class="mobile-nav-link">
+      <div class="mobile-menu-child animate__animated  animate__fadeInUp">
+        <span>BLOG</span>
+      </div>
+    </a>
+  
+  
+  </div>
+
+
+</div>
+
+<div class="body-outer">
+  <div class="body-inner">
+    
+<article class="post-inner">
+  <div class="post-content-outer">
+    <div class="post-intro">
+      <div class="post-title animate__animated  animate__fadeInUp">探究小型gpt能力-基于minigpt4</div>
+      <div class="meta-intro animate__animated  animate__fadeInUp">Apr 20 2023</div>
+      
+    </div>
+    <div class="post-content-inner">
+      <div class="post-content-inner-space">
+
+      </div>
+      <div class="post-content-main animate__animated  animate__fadeInUp">
+        <!-- top型目录 -->
+        
+        <p>在开始之前先学习一下低成本微调大模型的方案：<strong>LoRA</strong>：<a href="https://link.zhihu.com/?target=https://arxiv.org/pdf/2106.09685.pdf">LoRA: Low-Rank Adaptation of Large Language Models</a></p>
+<h1 id="1-LoRA的原理"><a href="#1-LoRA的原理" class="headerlink" title="1.LoRA的原理"></a>1.LoRA的原理</h1><p>LoRA是一种以极低资源微调大模型的方法。</p>
+<h2 id="1-1大模型微调的困境"><a href="#1-1大模型微调的困境" class="headerlink" title="1.1大模型微调的困境"></a>1.1大模型微调的困境</h2><p>随着模型规模的不断扩大，模型会”涌现”出各种能力。特别是对大语言模型(LLM)来说，随着规模的扩大其在zero-shot、常识推理等能力上会有大幅度的提高。相比于规模较小的模型，大模型的微调成本和部署成本都非常高。例如，GPT-3 175B模型微调需要1.2TB的显存。此外，若针对不同下游任务微调多个模型，那么就需要为每个下游任务保存一份模型权重，成本非常高。<strong>在某些场景下，甚至可能需要针对不同的用户微调不同的模型，那么模型微调和部署的成本将不可接受</strong>。</p>
+<h2 id="1-2LoRA之前的方法"><a href="#1-2LoRA之前的方法" class="headerlink" title="1.2LoRA之前的方法"></a>1.2LoRA之前的方法</h2><p>在LoRA方法提出之前，也有很多方法尝试解决大模型微调困境的方法。其中有两个主要的方向：(1) 添加adapter层；(2) 由于某种形式的输入层激活。但是这两种方法都有局限性：</p>
+<p>（1）Adapter：</p>
+<p>缺点：Adapter层会引入推理时延</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428145730956.png" >
+        </sapn>
+      </p>
+<p>简单来说，adapter就是固定原有的参数，并添加一些额外参数用于微调。上图中会在原始的transformer block中添加2个adapter，一个在多头注意力后面，另一个这是FFN后面。</p>
+<p>显然，adapter会在模型中添加额外的层，这些层会导致大模型在推理时需要更多的GPU通信，而且也会约束模型并行。<strong>这些问题都将导致模型推理变慢</strong>。</p>
+<p>（2）prefix-tuning：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428150834618.png" >
+        </sapn>
+      </p>
+<p>prefix-tuning方法是受语言模型in-context learning能力的启发，只要有合适的上下文则语言模型可以很好的解决自然语言任务。但是，针对特定的任务找到离散token的前缀需要花费很长时间，prefix-tuning提出使用连续的virtual token embedding来替换离散token。</p>
+<p>具体来说，对于transformer中的每一层，都在句子表征前面插入可训练的virtual token embedding。对于自回归模型(GPT系列)，在句子前添加连续前缀，即 z=[PREFIX;x;y] 。对于Encoder-Decoder模型(T5)，则在Ecoder和Decoder前都添加连续前缀 z=[PREFIX;x|PREFIX′;y] 。<strong>添加前缀的过程如上图所示</strong>。</p>
+<p><strong>虽然，prefix-tuning并没有添加太多的额外参数。但是，prefix-tuning难以优化，且会减少下游任务的序列长度。</strong></p>
+<h2 id="1-3问题的正式表述"><a href="#1-3问题的正式表述" class="headerlink" title="1.3问题的正式表述"></a>1.3问题的正式表述</h2><p><strong>术语与约定</strong>。由于LoRA原理的介绍，会使用Transformer架构。因此，这里先给出一些术语约定。一个Transformer层的输入和输出维度尺寸为：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428151054073.png" >
+        </sapn>
+      </p>
+<p>，使用 W<sub>q</sub>、W<sub>k</sub>、W<sub>v</sub>和W<sub>o</sub>表示自注意力模块中的query/key/value/output投影矩阵。 W或W<sub>0</sub> 表示预训练模型的权重矩阵， ΔW 表示模型在适配过程中的梯度更新。r来表示LoRA模块的秩。使用Adam作为模型优化器，Transformer MLP前馈层的维度为 :</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428151432190.png" >
+        </sapn>
+      。</p>
+<p><strong>问题表述</strong>。LoRA虽然与训练目标无关，这里还是以语言建模为例。假设给定一个预训练的自回归语言模型 P<sub>Φ</sub>sub&gt;(y|x) , Φ 是模型参数。目标是使该语言模型适应下游的摘要、机器阅读理解等任务。每个下游任务都有context-target样本对组成的训练集： z={(x<sub>i</sub>,y<sub>i</sub>)}<sub>i=1,…,N</sub>，其中 x<sub>i</sub> 和 y<sub>i</sub> 都是token序列。例如，对于摘要任务， x<sub>i</sub>  是文章内容，y<sub>i</sub>是摘要。</p>
+<p>在完整微调的过程中，模型使用预训练好的权重 Φ<sub>0</sub> 来初始化模型，然后通过最大化条件语言模型来更新参数 Φ<sub>0</sub>+ΔΦ ：<br>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428151954481.png" >
+        </sapn>
+      </p>
+<p>完整微调的主要缺点：对于每个下游任务，都需要学习不同的参数更新 ΔΦ ，其中维度 |ΔΦ|=| Φ<sub>0</sub> | 。因此，如果预训练模型很大，存储和部署许多独立的微调模型实例非常有挑战。</p>
+<p>LoRA为了更加的参数高效，使用相对非常小的参数 Θ 来表示任务相关的参数增量 ΔΦ=ΔΦ(Θ) ，其中 |Θ|≪| Φ<sub>0</sub> | 。寻找 ΔΦ 的任务就变成对 Θ 的优化:<br>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428152049131.png" >
+        </sapn>
+      </p>
+<p>LoRA将会使用低秩表示来编码 ΔΦ ，同时实现计算高效和存储高效。当预训练模型是175B GPT-3，可训练参数 |Θ| 可以小至 |Φ<sub>0</sub> | 的 0.01% 。</p>
+<h2 id="1-4LoRA"><a href="#1-4LoRA" class="headerlink" title="1.4LoRA"></a>1.4LoRA</h2><p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428153415914.png" >
+        </sapn>
+      </p>
+<p>通常，神经网络中会包含许多进行矩阵乘法的稠密层，这些层通常是满秩的。在模型适配下游任务的过程中，权重更新也应该具有低的“内在秩”。对于预训练权重矩阵 W<sub>0</sub>∈R<sup>d×k</sup> ，可以通过低秩分解来表示其更新 ，W<sub>0</sub>+ΔW=W<sub>0</sub>+BA，B∈R<sup>d×r</sup>, A∈R<sup>r×k</sup> 且秩 r≪min(d,k) 。在训练过程中， W<sub>0</sub>被冻结且不接受梯度更新，A和B则是可训练参数。注意， W<sub>0</sub>和 ΔW=BA 都会乘以相同的输入。对于h=W<sub>0</sub>x ，前向传播变为：<br>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230428161958237.png" >
+        </sapn>
+      </p>
+<p>对矩阵 A 使用随机高斯初始化，对矩阵 B 使用0进行初始化，因此 ΔW=BA 在训练的开始为0。使用 a/r 来缩放 ΔWx 。当使用Adam优化时，经过适当的缩放初始化，调优a与调优学习率大致相同。</p>
+<p>当进行部署时，以显式的计算和存储 W=W<sub>0</sub>+BA ，并正常执行推理。 W<sub>0</sub> 和BA都是R<sup>d×k</sup>。当需要转换至另一个下游任务，可以通过减去 BA来恢复W<sub>0</sub>  ，然后添加不同的 B′A′ 。至关重要的是，这保证不会引人任何额外的推理时延。</p>
+<h1 id="2-BLOOM学习：一个176B参数且可开放获取的多语言模型"><a href="#2-BLOOM学习：一个176B参数且可开放获取的多语言模型" class="headerlink" title="2.BLOOM学习：一个176B参数且可开放获取的多语言模型"></a>2.BLOOM学习：一个176B参数且可开放获取的多语言模型</h1><p>BigScience Large Open-science Open-access Multilingual Language Model(BLOOM)。BLOOM是在46种自然语言和13种编程语言上训练的1760亿参数语言模型，其是由数百名研究人员合作开发和发布的。</p>
+<h2 id="2-1训练数据"><a href="#2-1训练数据" class="headerlink" title="2.1训练数据"></a>2.1训练数据</h2><p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230429143332545.png" >
+        </sapn>
+      </p>
+<p>多任务提示微调(也称为instruction tuning)涉及到对预训练语言模型的微调，微调的数据集由通过自然语言提示构成的大量不同任务组成。T0证明了在多任务混合的prompted数据集上微调的模型具有强大的zero-shot泛化能力。此外，T0优于那些数量级大但是没有经过这种微调的语言模型。受这些结果启发，我们探索了使用现有自然语言数据集来进行多任务prompted微调。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230429144115726.png" >
+        </sapn>
+      </p>
+<p>T0是在Public Pool of Prompt(P3)子集上进行训练的，其是一个各种现有的、开源的应用自然语言数据集的prompt集合。该prompt集合是通过BigScience合作者参与的一系列黑客马拉松创建的，其中黑客马拉松参与者为170+数据集编写了2000+的prompt。P3中的数据集覆盖了各种自然语言任务，包括情感分析、问答、自然语言推理，并且排除了有害的内容或者非自然语言。PromptSource，一个开源工具包促进了自然语言prompt的创建、共享和使用。</p>
+<p>对BLOOM预训练之后，我们应用相同的大规模多任务微调，使BLOOM具有多语言zero-shot任务泛化能力。我们称得到的模型为BLOOMZ。为了训练BLOOMZ，我们扩展了P3来包含非英语中新数据集和新任务，例如翻译。这产生了xP3，它是83个数据集的提升集合，覆盖46种语言和16中任务。正如上图所述，xP3反映了ROOTS的语言分布。xP3中的任务包含跨语言和单语言。我们使用PromptSource来收集这些prompts，为prompt添加额外的元数据，例如输入和目标语言。为了研究多语言prompt的重要性，我们还将xP3中的英语提示用机器翻译为相应的数据集语言，来生成一个称为xP3mt的集合。</p>
+<h1 id="3-DeepSpeed使用指南"><a href="#3-DeepSpeed使用指南" class="headerlink" title="3.DeepSpeed使用指南"></a>3.DeepSpeed使用指南</h1><h2 id="3-1核心思想（TLDR）"><a href="#3-1核心思想（TLDR）" class="headerlink" title="3.1核心思想（TLDR）"></a>3.1核心思想（TLDR）</h2><p>GPU不够，CPU来凑，例如：我们只有一张10G的gpu，那么我们很可能需要借助80G的CPU，才能训练一个大模型。</p>
+<p>具体点说，DeepSpeed将当前时刻，训练模型用不到的参数，缓存到CPU中，等到要用到了，再从CPU挪到GPU。这里的“参数”，不仅指的是模型参数，还指optimizer、梯度等。</p>
+<p>越多的参数挪到CPU上，GPU的负担就越小；但随之的代价就是，更为频繁的CPU，GPU交互，极大增加了训练推理的时间开销。因此，DeepSpeed使用的一个核心要义是，时间开销和显存占用的权衡。</p>
+<h2 id="3-2如何安装"><a href="#3-2如何安装" class="headerlink" title="3.2如何安装"></a>3.2如何安装</h2><p>直接pip安装：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install deepspeed</span><br></pre></td></tr></table></figure>
+
+<p>官方更推荐的是用仓库本地编译安装，能够更加适配你的本地硬件环境：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/microsoft/DeepSpeed/</span><br><span class="line">cd DeepSpeed</span><br><span class="line">rm -rf build</span><br><span class="line">TORCH_CUDA_ARCH_LIST=<span class="string">&quot;8.6&quot;</span> DS_BUILD_CPU_ADAM=<span class="number">1</span> DS_BUILD_UTILS=<span class="number">1</span> pip install . \</span><br><span class="line">--<span class="keyword">global</span>-option=<span class="string">&quot;build_ext&quot;</span> --<span class="keyword">global</span>-option=<span class="string">&quot;-j8&quot;</span> --no-cache -v \</span><br><span class="line">--disable-pip-version-check <span class="number">2</span>&gt;&amp;<span class="number">1</span> | tee build.log</span><br></pre></td></tr></table></figure>
+
+<p>另外，HuggingFace提供了对DeepSpeed的友好集成，DeepSpeed使用所需要的很多参数，都可以由Transformer的Trainer来自动指定。可以说，DeepSpeed在HuggingFace Transformer上的使用，会更为便捷（当然，DeepSpeed也可以独立使用，并不依赖于Transformer）。</p>
+<p>作为Transformer的附属包安装：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install transformers[deepspeed]</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-3如何使用"><a href="#3-3如何使用" class="headerlink" title="3.3如何使用"></a>3.3如何使用</h2><p>使用DeepSpeed之后，你的命令行会像下面：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">deepspeed --master_port <span class="number">29500</span> --num_gpus=<span class="number">2</span> run_s2s.py \</span><br><span class="line">--deepspeed ds_config.json</span><br></pre></td></tr></table></figure>
+
+<p>==–master_port==：端口号。最好显示指定，默认为29500，可能会被占用（i.e., 跑了多个DeepSpeed进程）。<br>==–num_gpus==: GPU数目，默认会使用当前所见的所有GPU。<br>==–deepspeed==: 提供的config文件，用来指定许多DeepSpeed的重要参数。<br>使用DeepSpeed的一个核心要点，就在于写一个==config==文件（可以是.json，也可以是类json格式的配置文件），在这个配置文件中，你可以指定你想要的参数，例如，权衡时间和显存 (前文所提到的，这是一个很重要的权衡)。因此，上面几个参数里，最重要的便是==–deepspeed==，即你提供的config文件，即==ZeRO==。这也是本文接下来要重点介绍的。</p>
+<h3 id="3-3-1ZeRO"><a href="#3-3-1ZeRO" class="headerlink" title="3.3.1ZeRO"></a>3.3.1ZeRO</h3><p>Zero Redundancy Optimizer (ZeRO)是DeepSpeed的workhorse. 用户可以提供不同的ZeRO config文件，来实现DeepSpeed的不同功能特性。</p>
+<p>一句话总结： partitioning instead of replicating，<strong>划分而不是复制</strong>。</p>
+<p>即，传统的深度学习，模型训练并行，是将模型参数复制多份到多张GPU上，只将数据拆分（如，torch的Dataparallel），这样就会有大量的显存冗余浪费。而ZeRO就是为了消除这种冗余，提高对memory的利用率。注意，这里的“memory”不仅指多张GPU memory，还包括CPU。而ZeRO的实现方法，就是把参数占用，逻辑上分成三种类型。将这些类型的参数划分：</p>
+<ul>
+<li><code>optimizer states</code>：即优化器的参数状态。例如，Adam的动量参数。</li>
+<li><code>gradients</code>：梯度缓存，对应于optimizer。</li>
+<li><code>parameters</code>：模型参数。</li>
+</ul>
+<p>对应的，DeepSpeed的ZeRO config文件就可以分为如下几类：</p>
+<ul>
+<li><p><code>ZeRO Stage 1</code>: 划分optimizer states。优化器参数被划分到多个memory上，每个momoey上的进程只负责更新它自己那部分参数。</p>
+</li>
+<li><p><code>ZeRO Stage 2</code>: 划分gradient。每个memory，只保留它分配到的optimizer state所对应的梯度。这很合理，因为梯度和optimizer是紧密联系在一起的。只知道梯度，不知道optimizer state，是没有办法优化模型参数的。</p>
+</li>
+<li><p><code>ZeRO Stage 3</code>: 划分模型参数，或者说，不同的layer. ZeRO-3会在forward和backward的时候，自动将模型参数分配到多个memory。</p>
+</li>
+</ul>
+<p>由于ZeRO-1只分配optimizer states(参数量很小)，实际使用的时候，<strong>我们一般只会考虑<code>ZeRO-2</code>和<code>ZeRO-3</code>。</strong></p>
+<p>接下来介绍stage 2和3的常用config文件。</p>
+<h3 id="3-3-2ZeRO-Stage-2"><a href="#3-3-2ZeRO-Stage-2" class="headerlink" title="3.3.2ZeRO Stage 2"></a>3.3.2ZeRO Stage 2</h3><p>一个常用的ZeRO-stage-2的config文件：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;bfloat16&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;enabled&quot;</span>: <span class="string">&quot;auto&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;fp16&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;enabled&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">        <span class="string">&quot;loss_scale&quot;</span>: <span class="number">0</span>,</span><br><span class="line">        <span class="string">&quot;loss_scale_window&quot;</span>: <span class="number">1000</span>,</span><br><span class="line">        <span class="string">&quot;initial_scale_power&quot;</span>: <span class="number">16</span>,</span><br><span class="line">        <span class="string">&quot;hysteresis&quot;</span>: <span class="number">2</span>,</span><br><span class="line">        <span class="string">&quot;min_loss_scale&quot;</span>: <span class="number">1</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;optimizer&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;AdamW&quot;</span>,</span><br><span class="line">        <span class="string">&quot;params&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;lr&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">            <span class="string">&quot;betas&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">            <span class="string">&quot;eps&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">            <span class="string">&quot;weight_decay&quot;</span>: <span class="string">&quot;auto&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;scheduler&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;WarmupLR&quot;</span>,</span><br><span class="line">        <span class="string">&quot;params&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;warmup_min_lr&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">            <span class="string">&quot;warmup_max_lr&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">            <span class="string">&quot;warmup_num_steps&quot;</span>: <span class="string">&quot;auto&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;zero_optimization&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;stage&quot;</span>: <span class="number">2</span>,</span><br><span class="line">        <span class="string">&quot;offload_optimizer&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;device&quot;</span>: <span class="string">&quot;cpu&quot;</span>,</span><br><span class="line">            <span class="string">&quot;pin_memory&quot;</span>: true</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;allgather_partitions&quot;</span>: true,</span><br><span class="line">        <span class="string">&quot;allgather_bucket_size&quot;</span>: <span class="number">2e8</span>,</span><br><span class="line">        <span class="string">&quot;overlap_comm&quot;</span>: true,</span><br><span class="line">        <span class="string">&quot;reduce_scatter&quot;</span>: true,</span><br><span class="line">        <span class="string">&quot;reduce_bucket_size&quot;</span>: <span class="number">2e8</span>,</span><br><span class="line">        <span class="string">&quot;contiguous_gradients&quot;</span>: true</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;gradient_accumulation_steps&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">    <span class="string">&quot;gradient_clipping&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">    <span class="string">&quot;train_batch_size&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">    <span class="string">&quot;train_micro_batch_size_per_gpu&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">    <span class="string">&quot;steps_per_print&quot;</span>: <span class="number">1e5</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>有关于<code>offload</code></li>
+</ul>
+<p>上述参数中，最重要的一个就是<code>&quot;offload_optimizer&quot;</code>。如上述所示，我们将其<code>”device“</code>设置成了cpu，DeepSpeed就会按照之前提到过的ZeRO操作，在训练过程中，将优化器状态分配到cpu上。从而降低单张GPU的memory占用。</p>
+<ul>
+<li>有关于<code>overlap_comm</code></li>
+</ul>
+<p>另外一个需要提到的参数是<code>overlap_comm</code>。简单地理解，它控制着多个memory上进程之间通信的buffer的大小。这个值越大，进程之间通信越快，模型训练速度也会提升，但相应的显存占用也会变大；反之亦然。</p>
+<p>因此，<code>overlap_comm</code>也是一个需要进行一定权衡的参数。</p>
+<ul>
+<li>有关于<code>auto</code></li>
+</ul>
+<p>我们可以发现，上述大量参数被设置为<code>auto</code>。由于DeepSpeed目前已经被集成到了HuggingFace Transformer框架。而DeepSpeed的很多参数，和Transformer的Trainer参数设置是一模一样的，例如，<code>&quot;optimizer&quot;</code>，<code>&quot;scheduler&quot;</code>。因此，官方推荐将很多常用的模型训练参数，设置为<code>auto</code>，在使用Trainer进行训练的时候，这些值都会自动更新为Trainer中的设置，或者帮你自动计算。</p>
+<p>当然，你也可以自己设置，但一定要确保和Trainer中的设置一样。因为，如果设置错误，DeepSpeed还是会正常运行，不会立即报错。</p>
+<h3 id="3-3-3ZeRO-Stage-3"><a href="#3-3-3ZeRO-Stage-3" class="headerlink" title="3.3.3ZeRO Stage 3"></a>3.3.3ZeRO Stage 3</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;bfloat16&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;enabled&quot;</span>: false</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;fp16&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;enabled&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">        <span class="string">&quot;loss_scale&quot;</span>: <span class="number">0</span>,</span><br><span class="line">        <span class="string">&quot;loss_scale_window&quot;</span>: <span class="number">1000</span>,</span><br><span class="line">        <span class="string">&quot;initial_scale_power&quot;</span>: <span class="number">16</span>,</span><br><span class="line">        <span class="string">&quot;hysteresis&quot;</span>: <span class="number">2</span>,</span><br><span class="line">        <span class="string">&quot;min_loss_scale&quot;</span>: <span class="number">1</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;optimizer&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;AdamW&quot;</span>,</span><br><span class="line">        <span class="string">&quot;params&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;lr&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">            <span class="string">&quot;betas&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">            <span class="string">&quot;eps&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">            <span class="string">&quot;weight_decay&quot;</span>: <span class="string">&quot;auto&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;scheduler&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;WarmupLR&quot;</span>,</span><br><span class="line">        <span class="string">&quot;params&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;warmup_min_lr&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">            <span class="string">&quot;warmup_max_lr&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">            <span class="string">&quot;warmup_num_steps&quot;</span>: <span class="string">&quot;auto&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;zero_optimization&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;stage&quot;</span>: <span class="number">3</span>,</span><br><span class="line">        <span class="string">&quot;offload_optimizer&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;device&quot;</span>: <span class="string">&quot;cpu&quot;</span>,</span><br><span class="line">            <span class="string">&quot;pin_memory&quot;</span>: true</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;offload_param&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;device&quot;</span>: <span class="string">&quot;cpu&quot;</span>,</span><br><span class="line">            <span class="string">&quot;pin_memory&quot;</span>: true</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;overlap_comm&quot;</span>: true,</span><br><span class="line">        <span class="string">&quot;contiguous_gradients&quot;</span>: true,</span><br><span class="line">        <span class="string">&quot;sub_group_size&quot;</span>: <span class="number">1e9</span>,</span><br><span class="line">        <span class="string">&quot;reduce_bucket_size&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">        <span class="string">&quot;stage3_prefetch_bucket_size&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">        <span class="string">&quot;stage3_param_persistence_threshold&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">        <span class="string">&quot;stage3_max_live_parameters&quot;</span>: <span class="number">1e9</span>,</span><br><span class="line">        <span class="string">&quot;stage3_max_reuse_distance&quot;</span>: <span class="number">1e9</span>,</span><br><span class="line">        <span class="string">&quot;stage3_gather_fp16_weights_on_model_save&quot;</span>: true</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;gradient_accumulation_steps&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">    <span class="string">&quot;gradient_clipping&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">    <span class="string">&quot;steps_per_print&quot;</span>: <span class="number">1e5</span>,</span><br><span class="line">    <span class="string">&quot;train_batch_size&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">    <span class="string">&quot;train_micro_batch_size_per_gpu&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line">    <span class="string">&quot;wall_clock_breakdown&quot;</span>: false</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>有关于<code>“offload_param”</code></li>
+</ul>
+<p>可以看到，除了和stage2一样，有<code>offload_optimizer</code>参数之外，stage3还有一个<code>offload_param</code>参数。即，将模型参数进行划分。</p>
+<ul>
+<li>stage-3相关的其他参数</li>
+</ul>
+<p>下面这些参数是stage-3-specific的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;sub_group_size&quot;</span>: <span class="number">1e9</span>,</span><br><span class="line"><span class="string">&quot;reduce_bucket_size&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line"><span class="string">&quot;stage3_prefetch_bucket_size&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line"><span class="string">&quot;stage3_param_persistence_threshold&quot;</span>: <span class="string">&quot;auto&quot;</span>,</span><br><span class="line"><span class="string">&quot;stage3_max_live_parameters&quot;</span>: <span class="number">1e9</span>,</span><br><span class="line"><span class="string">&quot;stage3_max_reuse_distance&quot;</span>: <span class="number">1e9</span>,</span><br><span class="line"><span class="string">&quot;stage3_gather_fp16_weights_on_model_save&quot;</span>: true</span><br></pre></td></tr></table></figure>
+
+<p>一样的道理，这些值很多都可以用来控制stage-3的显存占用和训练效率(e.g.，<code>sub_group_size</code>)；同时，有一些参数也可以设置为auto，让Trainer去决定值(e.g., <code>reduce_bucket_size</code>,<code>stage3_prefetch_bucket_size</code>,<code>stage3_param_persistence_threshold</code>).</p>
+<h3 id="3-3-4ZeRO-Infinity"><a href="#3-3-4ZeRO-Infinity" class="headerlink" title="3.3.4ZeRO Infinity"></a>3.3.4ZeRO Infinity</h3><p>除了stage2和3之外，这里简单介绍一下<code>ZeRO-Infinity</code>。</p>
+<p><code>ZeRO-Infinity</code>可以看成是stage-3的进阶版本，需要依赖于<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/NVM_Express">NVMe</a>的支持。他可以offload所有模型参数状态到CPU以及NVMe上。得益于NMVe协议，除了使用CPU内存之外，ZeRO可以额外利用SSD(固态)，从而极大地节约了memory开销，加速了通信速度。</p>
+<p><em><strong>建议:</strong></em><br>在使用DeepSpeed之前，先使用上述代码，大概估计一下显存消耗，决定使用的GPU数目，以及ZeRO-stage。</p>
+<p>原则是，<strong>能直接多卡训练，就不要用ZeRO；能用ZeRO-2就不要用ZeRO-3.</strong></p>
+
+        <!-- 分类文章 -->
+        
+      </div>
+      <div class="post-content-inner-space">
+        
+          <div class="space-toc-main animate__animated  animate__fadeInUp">
+            <ol class="space-toc"><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#1-1%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%BE%AE%E8%B0%83%E7%9A%84%E5%9B%B0%E5%A2%83"><span class="space-toc-text">1.1大模型微调的困境</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#1-2LoRA%E4%B9%8B%E5%89%8D%E7%9A%84%E6%96%B9%E6%B3%95"><span class="space-toc-text">1.2LoRA之前的方法</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#1-3%E9%97%AE%E9%A2%98%E7%9A%84%E6%AD%A3%E5%BC%8F%E8%A1%A8%E8%BF%B0"><span class="space-toc-text">1.3问题的正式表述</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#1-4LoRA"><span class="space-toc-text">1.4LoRA</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#2-1%E8%AE%AD%E7%BB%83%E6%95%B0%E6%8D%AE"><span class="space-toc-text">2.1训练数据</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#3-1%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3%EF%BC%88TLDR%EF%BC%89"><span class="space-toc-text">3.1核心思想（TLDR）</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#3-2%E5%A6%82%E4%BD%95%E5%AE%89%E8%A3%85"><span class="space-toc-text">3.2如何安装</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#3-3%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8"><span class="space-toc-text">3.3如何使用</span></a></li></ol>
+           </div>
+        
+      </div>
+   </div>
+    <!-- 评论 -->
+    
+  </div>
+</article>
+  </div>
+</div>
+
+
+
+<!-- 如果是home模式的话，不在首页就显示footer，如果不是home模式的话 所有都显示footer -->
+
+  <div class="footer-outer animate__animated  animate__fadeInUp">
+    <div class="footer-inner">
+    <div class="footer-text">
+    <p>Power by <a target="_blank" rel="noopener" href="http://hexo.io/">Hexo</a> Theme by <a target="_blank" rel="noopener" href="https://github.com/FuShaoLei/hexo-theme-white">White</a></p>
+
+    </div>
+    <div class="footer-contact">
+    <ul class="footer-ul">
+        
+        <li class="footer-li">
+            <a href="https://github.com/YiyangZhou" target="_blank">
+                <i class="ri-github-line"></i>
+            </a>
+        </li>
+        
+        <li class="footer-li">
+            <a href="mailto:zhouyiyangailab@gmail.com" target="_blank">
+                <i class="ri-mail-line"></i>
+            </a>
+        </li>
+        
+        <li class="footer-li">
+            <a href="https://scholar.google.com/citations?user=6KltFMAAAAAJ&amp;hl=zh-CN" target="_blank">
+                <i class="ri-google-fill"></i>
+            </a>
+        </li>
+        
+    </ul>
+    </div>
+    </div>
+</div>
+
+
+
+
+
+
+<script src="/js/white.js"></script>
+
+
+
+</body>
+</html>
